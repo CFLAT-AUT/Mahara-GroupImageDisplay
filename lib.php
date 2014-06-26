@@ -28,6 +28,7 @@
 defined('INTERNAL') || die();
 
 require_once('group.php');
+require_once('view.php'); //20140626 JW might be needed for pagniation
 class PluginBlocktypeGroupViewsImage extends SystemBlocktype {
 
     public static function get_title() {
@@ -55,15 +56,22 @@ class PluginBlocktypeGroupViewsImage extends SystemBlocktype {
     }
 
     public static function render_instance(BlockInstance $instance, $editing=false) {
+		$texttitletrim = 20;
+		
 		//random offset and limit amout set. This was copied from Mike Kelly's code
 		$offset = 0;
-		$limit = 2;
+		$limit = 4;
 		
 		//random group id set for this trial
-		//$groupid = 3;
+		//$groupid = 520;
+		
+		 $groupid = $instance->get_view()->get('group');
+		 if (!$groupid) {
+            return '';
+        }
 		
 		//returns an array of all views for a group id. This uses the groupviews method that was copied acrossed
-		$data = self::get_data($groupid);
+		$data = self::get_data($groupid, $offset, $limit);
 
 		//the array that is returned contains a few other things but we just wanted to focus on sharedviews
 		//the foreach below will loop through all views shared with the group
@@ -73,7 +81,7 @@ class PluginBlocktypeGroupViewsImage extends SystemBlocktype {
 				//get the view
 				$viewID = $aViewProperty[id]; //the page shared
 				$fullurl = $aViewProperty[fullurl]; //full url of the page shared
-				$viewTitle = $aViewProperty[displaytitle]; //view's title
+				$viewTitle = str_shorten_text($aViewProperty[displaytitle], $texttitletrim, true); //view's title
 				
 				//get the owner of the view
 				$viewOwnerName = $aViewProperty[user]->firstname." ".$aViewProperty[user]->lastname; //owner of the view's name
@@ -114,7 +122,7 @@ class PluginBlocktypeGroupViewsImage extends SystemBlocktype {
 		}
 		
 		$items = array(
-                'count' =>  $data[sharedviews]->count,
+                'count'	 => $data[sharedviews]->count,
                 'data'   => $contents,
                 'offset' => $offset,
                 'limit'  => $limit,
@@ -122,6 +130,7 @@ class PluginBlocktypeGroupViewsImage extends SystemBlocktype {
 		
 		//calls Mike Kelly's method to build the objects to be displayed
 		self::build_browse_list_html($items);
+		
 		
 		
 		//Not sure what this does
@@ -226,23 +235,27 @@ EOF;
     }
 
 	/** Code copied from blocktype::groupviews **/
-	protected static function get_data($groupid) {
-        global $USER;
-
+	public static function get_data($groupid, $offset=0, $limit=20) {
+		global $USER;
+		
         if(!defined('GROUP')) {
-            define('GROUP', $groupid);
+            define('GROUP', 520);
         }
         // get the currently requested group
         $group = group_current_group();
         $role = group_user_access($group->id);
-        if ($role) {
-            // For group members, display a list of views that others have
+        if ($role) {            
+			// For group members, display a list of views that others have
             // shared to the group
-            $data['sharedviews'] = View::get_sharedviews_data(null, 0, $group->id);
-            foreach ($data['sharedviews']->data as &$view) {
-                if (isset($view['template']) && $view['template']) {
-                    $view['form'] = pieform(create_view_form($group, null, $view->id));
-                }
+			// Params for get_sharedviews_data is $limit=0,$offset=0, $groupid
+            
+			//$data['sharedviews'] = View::get_sharedviews_data(null, 0, $group->id);
+			$data['sharedviews'] = View::get_sharedviews_data($limit, $offset, $group->id);
+            
+			foreach ($data['sharedviews']->data as &$view) {
+				if (isset($view['template']) && $view['template']) {
+					$view['form'] = pieform(create_view_form($group, null, $view->id));
+				}				
             }
 			
 			//20140624 JW the below code is commented out as all we care about is the views shared to the group
@@ -372,11 +385,6 @@ EOF;
         ));
         $items['pagination'] = $pagination['html'];
         $items['pagination_js'] = $pagination['javascript'];
-	
-	
-
-	//echo $items['pagination'];
-	//echo $items['pagination_js'];
     }
 	
 	/**
@@ -385,11 +393,7 @@ EOF;
 	* @param array $params Options for the pagination
 	*/
 	function build_browse_pagination($params) {
-
-
-	
-	    echo "<pre>".print_r($params,true)."</pre>";
-	    
+		
 		// Bail if the required attributes are not present
 		$required = array('url', 'count', 'limit', 'offset');
 		foreach ($required as $option) {
@@ -470,8 +474,27 @@ EOF;
 			// Build the first/previous links
 			$isfirst = $page == 0;
 			$setlimit = true;
-			$output .= self::build_browse_pagination_pagelink('first', $params['url'], $setlimit, $params['limit'], 0, '&laquo; ' . $params['firsttext'], get_string('firstpage'), $isfirst, $params['offsetname']);
-			$output .= self::build_browse_pagination_pagelink('prev', $params['url'], $setlimit, $params['limit'], $params['limit'] * $prev, $params['offset'], '&larr; ' . $params['previoustext'], get_string('prevpage'), $isfirst, $params['offsetname']);
+			$output .= self::build_browse_pagination_pagelink('first', 
+																$params['url'], 
+																$setlimit, 
+																$params['limit'], 
+																0, 
+																'&laquo; ' . $params['firsttext'], 
+																get_string('firstpage'), 
+																$isfirst, 
+																$params['offsetname']
+															);
+			
+			$output .= self::build_browse_pagination_pagelink('prev', 
+																$params['url'], 
+																$setlimit, 
+																$params['limit'], 
+																$params['limit'] * $prev, 
+																$params['offset'], '&larr; ' . $params['previoustext'], 
+																get_string('prevpage'), 
+																$isfirst, 
+																$params['offsetname']
+															);
 
 			// Build the pagenumbers in the middle
 			foreach ($pagenumbers as $k => $i) {
@@ -482,16 +505,31 @@ EOF;
 					$output .= '<span class="selected">' . ($i + 1) . '</span>';
 				}
 				else {
-					$output .= self::build_browse_pagination_pagelink('', $params['url'], $setlimit, $params['limit'],
-						$params['limit'] * $i, $i + 1, '', false, $params['offsetname']);
+					$output .= self::build_browse_pagination_pagelink('', 
+																		$params['url'], 
+																		$setlimit, 
+																		$params['limit'],
+																		$params['limit'] * $i, 
+																		$i + 1, 
+																		'', 
+																		false, 
+																		$params['offsetname']
+																	);
 				}
 				$prevpagenum = $i;
 			}
 
 			// Build the next/last links
 			$islast = $page == $last;
-			$output .= self::build_browse_pagination_pagelink('next', $params['url'], $setlimit, $params['limit'], $params['limit'] * $next,
-				$params['nexttext'] . ' &rarr;', get_string('nextpage'), $islast, $params['offsetname']);
+			$output .= self::build_browse_pagination_pagelink('next', 
+																$params['url'], 
+																$setlimit, 
+																$params['limit'], 
+																$params['limit'] * $next,
+																$params['nexttext'] . ' &rarr;', 
+																get_string('nextpage'), 
+																$islast, $params['offsetname']
+															);
 
 		}
 
@@ -504,9 +542,11 @@ EOF;
 	}
 
 	function build_browse_pagination_pagelink($class, $url, $setlimit, $limit, $offset, $text, $title, $disabled=false, $offsetname='offset') {
+		
 		$return = '<span class="pagination';
 		$return .= ($class) ? " $class" : '';
-		$url = "javascript:groupviewsimage.filtercontent('recentwork'," . $limit . "," . $offset . ");";
+		$url = "javascript:Browse.filtercontent('recentwork'," . $limit . "," . $offset . ");";
+		//$url = "javascript:groupviewsimage.filtercontent('recentwork'," . $limit . "," . $offset . ");";
 
 		if ($disabled) {
 			$return .= ' disabled">' . $text . '</span>';

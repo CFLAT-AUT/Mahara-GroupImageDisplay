@@ -21,6 +21,7 @@
             pd[name] = value;
         });
         loadingmessage.removeClass('hidden');
+		
         sendjsonrequest(config['wwwroot'] + 'blocktype/groupviewsimage/browse.json.php', pd, 'POST', function(data) {
             loadingmessage.addClass('hidden');
             $('#gallery').replaceWith(data.data.tablerows);
