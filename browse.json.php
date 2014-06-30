@@ -33,6 +33,7 @@ safe_require('blocktype', 'groupviewsimage');
 
 $limit = param_integer('limit', 20);
 $offset = param_integer('offset', 0);
+/*
 $keywordtype = param_alpha('searchtype', 'user');
 
 $filters = array();
@@ -47,65 +48,14 @@ if ($college = param_variable('college', '')) {
 if ($course = param_variable('course', '')) {
     $filters['course'] = $course;
 }
+*/
 
-$data = PluginBlocktypeGroupViewsImage::get_data($filters, $offset, $limit);
+//20140627 JW commented out above segment as it is not required for groupviewsimage
+//We are only interested in groupid, offset and limit
 
-//the array that is returned contains a few other things but we just wanted to focus on sharedviews
-		//the foreach below will loop through all views shared with the group
-		foreach($data[sharedviews] as $aView){
-			//the foreach below will loop through all the properties for a view (returned by get_data method) and assigns them to the required variables
-			foreach($aView as $aViewProperty){
-				//get the view
-				$viewID = $aViewProperty[id]; //the page shared
-				$fullurl = $aViewProperty[fullurl]; //full url of the page shared
-				$viewTitle = str_shorten_text($aViewProperty[displaytitle], $texttitletrim, true); //view's title
-				
-				//get the owner of the view
-				$viewOwnerName = $aViewProperty[user]->firstname." ".$aViewProperty[user]->lastname; //owner of the view's name
-				$userobj = new User();
-				$userobj->find_by_id($aViewProperty[user]->id);
-				$profileurl = profile_url($userobj); //owner of the view's proflie page
-				$avatarurl = profile_icon_url($aViewProperty[user]->id,50,50); //owner of the view's profile picture
-				
-				
-				//get the artefact id of an image in the view
-				$theView = new View($aViewProperty[id]); //create the view
-				$artefactInView = $theView->get_artefact_metadata(); //get all artefacts in the view
-				foreach($artefactInView as $anArtefact){ //for each artefact
-					if($anArtefact->artefacttype == 'image'){
-						$artefactID = $anArtefact->id; //if it is an image artefact assign the id and break the loop
-						break;
-					}
-				}
-				
-				//the items variable below requires the contents array to be in this format
-				$contents['photos'][] = array(
-					"image" => array (
-							"id" => $artefactID,
-							"view" => $viewID
-							),
-					"type" => "photo",
-					"page" => array(
-								"url" => $fullurl,
-								"title" => $viewTitle
-					),
-					"owner" => array(
-								"name" => $viewOwnerName,
-								"profileurl" => $profileurl,
-								"avatarurl" => $avatarurl
-					)
-				);
-			}
-		}
-		
-		$items = array(
-                'count'	 => $data[sharedviews]->count,
-                'data'   => $contents,
-                'offset' => $offset,
-                'limit'  => $limit,
-        );
+$groupid = param_variable('groupid', '');
 
-
+$items = PluginBlocktypeGroupViewsImage::get_data($groupid, $offset, $limit);
 PluginBlocktypeGroupViewsImage::build_browse_list_html($items);
 
 //$items = ArtefactTypeBrowse::get_browsable_items($filters, $offset, $limit);

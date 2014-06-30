@@ -6,7 +6,8 @@
     //Public Method
     Browse.filtercontent = function(browsetype, limit, offset) {
         offset = typeof offset !== 'undefined' ? offset : 0;
-        var filters = {};
+        /*var filters = {};
+		
         $("#active-filters .filter-entry").each(function() {
             var name = $(this).attr('name');
             var val = $(this).attr('value');
@@ -16,13 +17,27 @@
                 filters[name] = val;
             }
         });
-        var pd = {'filter': 1, 'limit': limit, 'offset': offset,  'searchtype': $('#search-type').val()};
+        var pd = {'filter': 1, 'limit': limit, 'offset': offset,  'searchtype': $('#search-type').val(), 'groupid':520};
         $.each(filters, function(name, value) {
             pd[name] = value;
         });
+		*/
+		
+		//20140627 JW commented out above segment as it is not required for groupviewsimage
+		//build a new post variables to pass to the browse.json.php file only containing groupid, offset and limit
+		
+		//tokenise the url to see if it contains group. If it does then assign the id to groupid
+		$url = document.URL.split("/");
+		if($.inArray("group", $url)){
+			var groupid = $.urlParam('id');
+		}
+		
+		//build new post variables to pass into browse.json.php
+		var postVariables = {'groupid': groupid, 'limit': limit, 'offset': offset};
+		
         loadingmessage.removeClass('hidden');
 		
-        sendjsonrequest(config['wwwroot'] + 'blocktype/groupviewsimage/browse.json.php', pd, 'POST', function(data) {
+        sendjsonrequest(config['wwwroot'] + 'blocktype/groupviewsimage/browse.json.php', postVariables, 'POST', function(data) {
             loadingmessage.addClass('hidden');
             $('#gallery').replaceWith(data.data.tablerows);
             $('#browselist_pagination').html(data.data.pagination);
@@ -30,6 +45,14 @@
         });
     };
 
+	//20140627 JW copied from: http://www.sitepoint.com/url-parameters-jquery/
+	//This is to get get variables from url
+	$.urlParam = function(name){
+		var results = new RegExp('[\?&amp;]' + name + '=([^&amp;#]*)').exec(window.location.href);
+		return results[1] || 0;
+	}
+	// *** //
+	
     function init() {
         loadingmessage = $('#loadingmessage');
         connect_enter_event();
@@ -66,7 +89,7 @@
                 }
             });
     }
-
+	
     function connect_hover_events() {
         $('.gall-cell').hover(function() {
             $('.gall-span', this).stop().animate({"opacity": 1});

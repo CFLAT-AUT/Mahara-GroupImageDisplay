@@ -19,7 +19,7 @@
  *
  * @package    mahara
  * @subpackage blocktype-groupviewsimage
- * @author     Shen Zhang
+ * @author     Shen Zhang and Jawyei Wong
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
  * @copyright  (C) 2014 Shen Zhang, http://www.shenzhang.cn
  *
@@ -54,16 +54,40 @@ class PluginBlocktypeGroupViewsImage extends SystemBlocktype {
     public static function hide_title_on_empty_content() {
         return true;
     }
+	
+	public static function has_instance_config() {
+        return true;
+    }
+	
+	public static function get_instance_title() {
+        return get_string('title', 'blocktype.groupviewsimage');
+    }
+
+    public static function instance_config_form($instance) {
+        $configdata = $instance->get('configdata');
+        return array(
+            'showsharedviews' => array(
+                'type' => 'radio',
+                'title' => get_string('displaysharedviews', 'blocktype.groupviewsimage'),
+                'description' => get_string('displaysharedviewsdesc', 'blocktype.groupviewsimage'),
+                'options' => array(
+                    1 => get_string('yes'),
+                    0 => get_string('no'),
+                ),
+                'separator' => '<br>',
+                'defaultvalue' => isset($configdata['showsharedviews']) ? $configdata['showsharedviews'] : 1,
+            ),
+        );
+    }
+
+    public static function default_copy_type() {
+        return 'shallow';
+    }
 
     public static function render_instance(BlockInstance $instance, $editing=false) {
-		$texttitletrim = 20;
-		
-		//random offset and limit amout set. This was copied from Mike Kelly's code
+		//Default limit and offset. This was copied from Mike Kelly's code
 		$offset = 0;
-		$limit = 4;
-		
-		//random group id set for this trial
-		//$groupid = 520;
+		$limit = 10;
 		
 		 $groupid = $instance->get_view()->get('group');
 		 if (!$groupid) {
@@ -71,67 +95,14 @@ class PluginBlocktypeGroupViewsImage extends SystemBlocktype {
         }
 		
 		//returns an array of all views for a group id. This uses the groupviews method that was copied acrossed
-		$data = self::get_data($groupid, $offset, $limit);
-
-		//the array that is returned contains a few other things but we just wanted to focus on sharedviews
-		//the foreach below will loop through all views shared with the group
-		foreach($data[sharedviews] as $aView){
-			//the foreach below will loop through all the properties for a view (returned by get_data method) and assigns them to the required variables
-			foreach($aView as $aViewProperty){
-				//get the view
-				$viewID = $aViewProperty[id]; //the page shared
-				$fullurl = $aViewProperty[fullurl]; //full url of the page shared
-				$viewTitle = str_shorten_text($aViewProperty[displaytitle], $texttitletrim, true); //view's title
-				
-				//get the owner of the view
-				$viewOwnerName = $aViewProperty[user]->firstname." ".$aViewProperty[user]->lastname; //owner of the view's name
-				$userobj = new User();
-				$userobj->find_by_id($aViewProperty[user]->id);
-				$profileurl = profile_url($userobj); //owner of the view's proflie page
-				$avatarurl = profile_icon_url($aViewProperty[user]->id,50,50); //owner of the view's profile picture
-				
-				
-				//get the artefact id of an image in the view
-				$theView = new View($aViewProperty[id]); //create the view
-				$artefactInView = $theView->get_artefact_metadata(); //get all artefacts in the view
-				foreach($artefactInView as $anArtefact){ //for each artefact
-					if($anArtefact->artefacttype == 'image'){
-						$artefactID = $anArtefact->id; //if it is an image artefact assign the id and break the loop
-						break;
-					}
-				}
-				
-				//the items variable below requires the contents array to be in this format
-				$contents['photos'][] = array(
-					"image" => array (
-							"id" => $artefactID,
-							"view" => $viewID
-							),
-					"type" => "photo",
-					"page" => array(
-								"url" => $fullurl,
-								"title" => $viewTitle
-					),
-					"owner" => array(
-								"name" => $viewOwnerName,
-								"profileurl" => $profileurl,
-								"avatarurl" => $avatarurl
-					)
-				);
-			}
-		}
-		
-		$items = array(
-                'count'	 => $data[sharedviews]->count,
-                'data'   => $contents,
-                'offset' => $offset,
-                'limit'  => $limit,
-        );
+		$items = self::get_data($groupid, $offset, $limit);
 		
 		//calls Mike Kelly's method to build the objects to be displayed
 		self::build_browse_list_html($items);
 		
-		
+		if(empty($items) || !isset($items)){
+			return "You are not a member of this group";
+		}
 		
 		//Not sure what this does
 		$js = <<< EOF
@@ -165,226 +136,126 @@ EOF;
 
 		//returns the template as text so mahara can render the block
 		return $dwoo->fetch('blocktype:groupviewsimage:index.tpl');
-		
-		//20140624 JW below code might be handy and thus not deleted yet
-		/*
-		$dwoo = smarty(
-					array(
-						'blocktype/groupviewsimage/js/jquery-ui/js/jquery-ui-1.8.19.custom.min.js',
-						'blocktype/groupviewsimage/js/chosen.jquery.js',
-						'blocktype/groupviewsimage/js/browse.js'
-					),
-					array(
-						'<link href="' . get_config('wwwroot') . 'blocktype/groupviewsimage/js/jquery-ui/css/custom-theme/jquery-ui-1.8.20.custom.css" type="text/css" rel="stylesheet">',
-						'<link href="' . get_config('wwwroot') . 'blocktype/groupviewsimage/theme/raw/static/style/chosen.css" type="text/css" rel="stylesheet">',
-						'<link href="' . get_config('wwwroot') . 'blocktype/groupviewsimage/theme/raw/static/style/style.css" type="text/css" rel="stylesheet">'
-					)
-				);
-		*/
-		
-		/*
-		$smarty = smarty(array('artefact/browse/js/jquery-ui/js/jquery-ui-1.8.19.custom.min.js','artefact/browse/js/chosen.jquery.js','artefact/browse/js/browse.js'), array('<link href="' . get_config('wwwroot') . 'artefact/browse/js/jquery-ui/css/custom-theme/jquery-ui-1.8.20.custom.css" type="text/css" rel="stylesheet">','<link href="' . get_config('wwwroot') . 'artefact/browse/theme/raw/static/style/chosen.css" type="text/css" rel="stylesheet">'));
-		$smarty->assign_by_ref('items', $items);
-		$smarty->assign('PAGEHEADING', hsc(get_string("browse", "artefact.browse")));
-		//$smarty->assign('colleges', $optionscolleges);
-		$smarty->assign('INLINEJAVASCRIPT', $js);
-		$smarty->display('artefact:browse:index.tpl');
-		*/
-		
-
-    }
-
-    public static function has_instance_config() {
-        return true;
-    }
-
-
-    public static function instance_config_form($instance) {
-        $configdata = $instance->get('configdata');
-        return array(
-/*
-            'showgroupviews' => array(
-                'type' => 'radio',
-                'description' => get_string('displaygroupviewsdesc', 'blocktype.groupviewsimage'),
-                'title' => get_string('displaygroupviews', 'blocktype.groupviewsimage'),
-                'options' => array(
-                    1 => get_string('yes'),
-                    0 => get_string('no'),
-                ),
-                'separator' => '<br>',
-                'defaultvalue' => isset($configdata['showgroupviews']) ? $configdata['showgroupviews'] : 1,
-            ),
-*/
-            'showsharedviews' => array(
-                'type' => 'radio',
-                'title' => get_string('displaysharedviews', 'blocktype.groupviewsimage'),
-                'description' => get_string('displaysharedviewsdesc', 'blocktype.groupviewsimage'),
-                'options' => array(
-                    1 => get_string('yes'),
-                    0 => get_string('no'),
-                ),
-                'separator' => '<br>',
-                'defaultvalue' => isset($configdata['showsharedviews']) ? $configdata['showsharedviews'] : 1,
-            ),
-        );
-    }
-
-
-    public static function default_copy_type() {
-        return 'shallow';
     }
 
 	/** Code copied from blocktype::groupviews **/
 	public static function get_data($groupid, $offset=0, $limit=20) {
 		global $USER;
+		$texttitletrim = 20;
 		
         if(!defined('GROUP')) {
-            define('GROUP', 520);
+          define('GROUP', $groupid);
         }
         // get the currently requested group
         $group = group_current_group();
         $role = group_user_access($group->id);
-        if ($role) {            
-			// For group members, display a list of views that others have
-            // shared to the group
+		
+        if ($role) {		
+			// For group members, display a list of views that others have shared to the group
 			// Params for get_sharedviews_data is $limit=0,$offset=0, $groupid
-            
-			//$data['sharedviews'] = View::get_sharedviews_data(null, 0, $group->id);
+       
 			$data['sharedviews'] = View::get_sharedviews_data($limit, $offset, $group->id);
             
+			/*
 			foreach ($data['sharedviews']->data as &$view) {
 				if (isset($view['template']) && $view['template']) {
 					$view['form'] = pieform(create_view_form($group, null, $view->id));
 				}				
             }
+			*/
 			
-			//20140624 JW the below code is commented out as all we care about is the views shared to the group
-			// Get all views created in the group
-			/*
-            $sort = array(array('column' => 'type=\'grouphomepage\'', 'desc' => true));
-            $data['groupviews'] = View::view_search(null, null, (object) array('group' => $group->id), null, null, 0, true, $sort);
-            foreach ($data['groupviews']->data as &$view) {
-                if (isset($view['template']) && $view['template']) {
-                    $view['form'] = pieform(create_view_form(null, null, $view['id']));
-                }
-            }
-			*/
-            
-			/*
-            if (group_user_can_assess_submitted_views($group->id, $USER->get('id'))) {
-                // Display a list of views submitted to the group
-                list($collections, $views) = View::get_views_and_collections(null, null, null, null, false, $group->id);
-                $data['allsubmitted'] = array_merge(array_values($collections), array_values($views));
-            }
-			*/
+			//the array that is returned from View::get_sharedviews_data($limit, $offset, $group->id)
+			//contains a few other things but we just wanted to focus on sharedviews
+			//the foreach below will loop through all views shared with the group
+			foreach($data[sharedviews] as $aView){
+				//the foreach below will loop through all the properties for a view (returned by get_data method) and assigns them to the required variables
+				foreach($aView as $aViewProperty){
+					//get the view
+					$viewID = $aViewProperty[id]; //the page shared
+					$fullurl = $aViewProperty[fullurl]; //full url of the page shared
+					$viewTitle = str_shorten_text($aViewProperty[displaytitle], $texttitletrim, true); //view's title
+					
+					//get the owner of the view
+					$viewOwnerName = $aViewProperty[user]->firstname." ".$aViewProperty[user]->lastname; //owner of the view's name
+					$userobj = new User();
+					$userobj->find_by_id($aViewProperty[user]->id);
+					$profileurl = profile_url($userobj); //owner of the view's proflie page
+					$avatarurl = profile_icon_url($aViewProperty[user]->id,50,50); //owner of the view's profile picture
+					
+					
+					//get the artefact id of an image in the view
+					$theView = new View($aViewProperty[id]); //create the view
+					$artefactInView = $theView->get_artefact_metadata(); //get all artefacts in the view
+					foreach($artefactInView as $anArtefact){ //for each artefact
+						if($anArtefact->artefacttype == 'image'){
+							$artefactID = $anArtefact->id; //if it is an image artefact assign the id and break the loop
+							break;
+						}
+					}
+					
+					//the items variable below requires the contents array to be in this format
+					$contents['photos'][] = array(
+						"image" => array (
+								"id" => $artefactID,
+								"view" => $viewID
+								),
+						"type" => "photo",
+						"page" => array(
+									"url" => $fullurl,
+									"title" => $viewTitle
+						),
+						"owner" => array(
+									"name" => $viewOwnerName,
+									"profileurl" => $profileurl,
+									"avatarurl" => $avatarurl
+						)
+					);
+				}
+			}
+			
+			$items2 = array(
+					'count'	 => $data[sharedviews]->count,
+					'data'   => $contents,
+					'offset' => $offset,
+					'limit'  => $limit,
+			);
         }
-		/*
-        if ($group->submittableto) {
-            require_once('pieforms/pieform.php');
-            // A user can submit more than one view to the same group, but no view can be
-            // submitted to more than one group.
-
-            // Display a list of views this user has submitted to this group, and a submission
-            // form containing drop-down of their unsubmitted views.
-
-            list($collections, $views) = View::get_views_and_collections($USER->get('id'), null, null, null, false, $group->id);
-            $data['mysubmitted'] = array_merge(array_values($collections), array_values($views));
-
-            $data['group_view_submission_form'] = group_view_submission_form($group->id);
-        }
-		*/
-        $data['group'] = $group;
-        return $data;
+		
+        //$data['group'] = $group;
+		
+        return $items2;
     }
 	/** End of code copied from blocktype::groupviews **/    
     
-    
-/*
-    protected static function get_data($groupid) {
-        global $USER;
-
-        if(!defined('GROUP')) {
-            define('GROUP', $groupid);
-        }
-        // get the currently requested group
-        $group = group_current_group();
-        $role = group_user_access($group->id);
-        if ($role) {
-            // Get all views created in the group
-            $sort = array(array('column' => 'type=\'grouphomepage\'', 'desc' => true));
-            $data['groupviews'] = View::view_search(null, null, (object) array('group' => $group->id), null, null, 0, true, $sort);
-            foreach ($data['groupviews']->data as &$view) {
-                if (isset($view['template']) && $view['template']) {
-                    $view['form'] = pieform(create_view_form(null, null, $view['id']));
-                }
-            }
-
-            // For group members, display a list of views that others have
-            // shared to the group
-            $data['sharedviews'] = View::get_sharedviews_data(null, 0, $group->id);
-            foreach ($data['sharedviews']->data as &$view) {
-                if (isset($view['template']) && $view['template']) {
-                    $view['form'] = pieform(create_view_form($group, null, $view->id));
-                }
-            }
-
-            if (group_user_can_assess_submitted_views($group->id, $USER->get('id'))) {
-                // Display a list of views submitted to the group
-                list($collections, $views) = View::get_views_and_collections(null, null, null, null, false, $group->id);
-                $data['allsubmitted'] = array_merge(array_values($collections), array_values($views));
-            }
-        }
-
-        if ($group->submittableto) {
-            require_once('pieforms/pieform.php');
-            // A user can submit more than one view to the same group, but no view can be
-            // submitted to more than one group.
-
-            // Display a list of views this user has submitted to this group, and a submission
-            // form containing drop-down of their unsubmitted views.
-
-            list($collections, $views) = View::get_views_and_collections($USER->get('id'), null, null, null, false, $group->id);
-            $data['mysubmitted'] = array_merge(array_values($collections), array_values($views));
-
-            $data['group_view_submission_form'] = group_view_submission_form($group->id);
-        }
-        $data['group'] = $group;
-        return $data;
-    }
-
-*/
-    public static function get_instance_title() {
-        return get_string('title', 'blocktype.groupviewsimage');
-    }
-
-
-
-	/**
+    /**
 	* Start of Mike Kelly's code
 	*/
 	public static function build_browse_list_html(&$items) {
-        $smarty = smarty_core();
-        $smarty->assign_by_ref('items', $items);
-        $smarty->assign('wwwroot', get_config('wwwroot'));
-        $items['tablerows'] = $smarty->fetch('blocktype:groupviewsimage:browselist.tpl'); // the 'tablerows' naming is required for pagination script
-        $pagination = self::build_browse_pagination(array(
-            'id' => 'browselist_pagination',
-            'url' => get_config('wwwroot') . 'blocktype/groupviewsimage/lib.php',
-            'jsonscript' => 'blocktype/groupviewsimage/browse.json.php',
-            'datatable' => 'browselist', // the pagination script expects a table with this id
-            'count' => $items['count'],
-            'limit' => $items['limit'],
-            'offset' => $items['offset'],
-            'firsttext' => '',
-            'previoustext' => '',
-            'nexttext' => '',
-            'lasttext' => '',
-            'numbersincludefirstlast' => false,
-            'resultcounttextsingular' => 'Item', //get_string('plan', 'artefact.plans'),
-            'resultcounttextplural' => 'Items', //get_string('plans', 'artefact.plans'),
-        ));
-        $items['pagination'] = $pagination['html'];
-        $items['pagination_js'] = $pagination['javascript'];
+        //20140627 JW added if set so it does not display anything if the user is not a group member
+		if(isset($items)){
+			$smarty = smarty_core();
+			$smarty->assign_by_ref('items', $items);
+			$smarty->assign('wwwroot', get_config('wwwroot'));
+			$items['tablerows'] = $smarty->fetch('blocktype:groupviewsimage:browselist.tpl'); // the 'tablerows' naming is required for pagination script
+			$pagination = self::build_browse_pagination(array(
+				'id' => 'browselist_pagination',
+				'url' => get_config('wwwroot') . 'blocktype/groupviewsimage/lib.php',
+				'jsonscript' => 'blocktype/groupviewsimage/browse.json.php',
+				'datatable' => 'browselist', // the pagination script expects a table with this id
+				'count' => $items['count'],
+				'limit' => $items['limit'],
+				'offset' => $items['offset'],
+				'firsttext' => '',
+				'previoustext' => '',
+				'nexttext' => '',
+				'lasttext' => '',
+				'numbersincludefirstlast' => false,
+				'resultcounttextsingular' => 'Item', //get_string('plan', 'artefact.plans'),
+				'resultcounttextplural' => 'Items', //get_string('plans', 'artefact.plans'),
+			));
+			$items['pagination'] = $pagination['html'];
+			$items['pagination_js'] = $pagination['javascript'];
+		}
     }
 	
 	/**
@@ -442,8 +313,8 @@ EOF;
 		}
 		$output .= '">';
 
-		
-		if ($params['limit'] <= $params['count']) {
+		//20140630 JW removed <= and added <
+		if ($params['limit'] < $params['count']) {
 			$pages = ceil($params['count'] / $params['limit']);
 			$page = $params['offset'] / $params['limit'];
 
@@ -479,7 +350,7 @@ EOF;
 																$setlimit, 
 																$params['limit'], 
 																0, 
-																'&laquo; ' . $params['firsttext'], 
+																'&laquo; First ' . $params['firsttext'], 
 																get_string('firstpage'), 
 																$isfirst, 
 																$params['offsetname']
@@ -490,12 +361,12 @@ EOF;
 																$setlimit, 
 																$params['limit'], 
 																$params['limit'] * $prev, 
-																$params['offset'], '&larr; ' . $params['previoustext'], 
+																'&larr; Previous ' . $params['previoustext'], 
 																get_string('prevpage'), 
 																$isfirst, 
 																$params['offsetname']
 															);
-
+															
 			// Build the pagenumbers in the middle
 			foreach ($pagenumbers as $k => $i) {
 				if ($k != 0 && $prevpagenum < $i - 1) {
@@ -526,7 +397,7 @@ EOF;
 																$setlimit, 
 																$params['limit'], 
 																$params['limit'] * $next,
-																$params['nexttext'] . ' &rarr;', 
+																$params['nexttext'] . ' Next &rarr;', 
 																get_string('nextpage'), 
 																$islast, $params['offsetname']
 															);
@@ -542,16 +413,18 @@ EOF;
 	}
 
 	function build_browse_pagination_pagelink($class, $url, $setlimit, $limit, $offset, $text, $title, $disabled=false, $offsetname='offset') {
-		
-		$return = '<span class="pagination';
-		$return .= ($class) ? " $class" : '';
 		$url = "javascript:Browse.filtercontent('recentwork'," . $limit . "," . $offset . ");";
 		//$url = "javascript:groupviewsimage.filtercontent('recentwork'," . $limit . "," . $offset . ");";
 
 		if ($disabled) {
-			$return .= ' disabled">' . $text . '</span>';
+			//20140627 JW display nothing if the button is disabled
+			//$return = '<span class="pagination';
+			//$return .= ($class) ? " $class" : '';
+			//$return .= ' disabled">' . $text . '</span>';
 		}
 		else {
+			$return = '<span class="pagination';
+			$return .= ($class) ? " $class" : '';
 			$return .= '">'
 			. '<a href="' . $url . '" title="' . $title
 			. '">' . $text . '</a></span>';
