@@ -19,9 +19,8 @@
  *
  * @package    mahara
  * @subpackage blocktype-groupviewsimage
- * @author     Shen Zhang
+ * @author     Jawyei Wong / Shen Zhang, AUT University, Code adapted from artefact-browse plugin by Mike Kelly UAL m.f.kelly@arts.ac.uk
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
- * @copyright  (C) 2014 Shen Zhang http://www.shenzhang.cn
  *
  */
 
