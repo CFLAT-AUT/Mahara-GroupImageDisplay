@@ -191,6 +191,9 @@ EOF;
 							$artefactID = $anArtefact->id; //if it is an image artefact assign the id and break the loop
 							break;
 						}
+						//20140903 JW if there are no images on the page then set to artefactID to 0
+						//this way, when display each page, instead of a blank box it will show a place holder image
+						$artefactID = 0;
 					}
 					
 					//the items variable below requires the contents array to be in this format

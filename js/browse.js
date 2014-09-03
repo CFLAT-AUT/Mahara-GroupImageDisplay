@@ -46,7 +46,7 @@
     };
 
 	//20140627 JW copied from: http://www.sitepoint.com/url-parameters-jquery/
-	//This is to get get variables from url
+	//This is to get variables from url
 	$.urlParam = function(name){
 		var results = new RegExp('[\?&amp;]' + name + '=([^&amp;#]*)').exec(window.location.href);
 		return results[1] || 0;
@@ -55,12 +55,12 @@
 	
     function init() {
         loadingmessage = $('#loadingmessage');
-        connect_enter_event();
-        connect_add_filter_options()
-        connect_autocomplete();
         connect_hover_events();
-        connect_placeholder_updates();
-
+		//connect_enter_event();
+		//connect_add_filter_options()
+        //connect_autocomplete();
+        //connect_placeholder_updates();
+		/*
         // set filter checkboxes to be buttons
         $('input.checkbox')
             .button({
@@ -88,6 +88,7 @@
                     remove_active_filter(filtertype, inputval);
                 }
             });
+		*/
     }
 	
     function connect_hover_events() {
@@ -102,6 +103,99 @@
             $(this).text('View page');
         }, function() {
             $(this).text(pagename);
+        });
+    }
+	
+    $(document).ready(function() {
+        init();
+    });
+	
+/* 	
+	function refresh_content(offset) {
+        $('#loading-graphic').show();
+        offset = typeof offset !== 'undefined' ? offset : 0;
+        var filters = {};
+        $("#active-filters .filter-entry").each(function() {
+            var name = $(this).attr('name');
+            var val = $(this).attr('value');
+            if (filters[name] && filters[name].indexOf(val) == -1) {
+                if (name=='course') {
+                    // some course names will return multiple ids
+                    // cater for this when building db query
+                    filters[name] += ";" +val;
+                } else {
+                    filters[name] += "," +val;
+                }
+            } else {
+                filters[name] = val;
+            }
+        });
+        var pd = {'filter': 1, 'offset': offset, 'searchtype': $('#search-type').val() };
+        $.each(filters, function(name, value) {
+            pd[name] = value;
+        });
+
+        sendjsonrequest(config['wwwroot'] + 'blocktype/groupviewsimage/browse.json.php', pd, 'POST', function(data) {
+                $('#gallery').removeClass('hidden');
+                $('#gallery').replaceWith(data.data.tablerows);
+                if (!$('#browselist_pagination').length) {
+                    var pag = $('<div>').attr('id', 'pagination').html(data.data.pagination);
+                    $('#gallery').prepend(pag);
+                } else {
+                    $('#browselist_pagination').html(data.data.pagination);
+                }
+                connect_hover_events();
+        });
+        $('#loading-graphic').hide();
+    }
+	
+	function connect_enter_event() {
+        $("#filter-keyword, #filter-course").keypress(function(event) {
+          var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
+            if ( keycode == 13 ) {
+               event.preventDefault();
+               event.stopPropagation();
+               add_filter($(this).attr('name'), $(this).val());
+               $(this).val('');
+               $(this).focus();
+             $('#filter-course-container').hide();
+             hide_filter_course_container();
+             }
+          });
+    }
+
+	function connect_autocomplete() {
+        var pd = {'autocomplete': 1,
+                   'field' : 'course'
+                 };
+        $('#filter-course').autocomplete({
+            minLength: 2,
+            source: function(request, response) {
+                pd['term'] = request['term'];
+                sendjsonrequest(config['wwwroot'] + 'blocktype/groupviewsimage/autocomplete.json.php', pd, 'POST', function(data) {
+                    response(data.courses);
+                });
+            }
+        });
+    }
+	
+	function connect_add_filter_options() {
+        $('.add-text-filter-button').each(function() {
+            connect_add_text_button($(this));
+        });
+        $('#filter-sharetype-container, #filter-college-container, #filter-keyword').click(function() {
+            hide_filter_course_container();
+        });
+        $('.chzn-select').chosen({disable_search_threshold: 10}).change(function() {
+            var id = $(this).attr('id');
+            var type = id.substr(id.lastIndexOf('-')+1);
+            add_filter(type, $(this).val());
+        });
+        $('#activate-course-search').click(function() {
+            toggle_filter_course_container();
+        });
+        $('#query-button-course').click(function() {
+            hide_filter_course_container();
         });
     }
 
@@ -123,50 +217,20 @@
         });
     }
 
-    function connect_enter_event() {
-        $("#filter-keyword, #filter-course").keypress(function(event) {
-          var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
-            if ( keycode == 13 ) {
-               event.preventDefault();
-               event.stopPropagation();
-               add_filter($(this).attr('name'), $(this).val());
-               $(this).val('');
-               $(this).focus();
-             $('#filter-course-container').hide();
-             hide_filter_course_container();
-             }
-          });
-    }
-
-    function connect_autocomplete() {
-        var pd = {'autocomplete': 1,
-                   'field' : 'course'
-                 };
-        $('#filter-course').autocomplete({
-            minLength: 2,
-            source: function(request, response) {
-                pd['term'] = request['term'];
-                sendjsonrequest(config['wwwroot'] + 'blocktype/groupviewsimage/autocomplete.json.php', pd, 'POST', function(data) {
-                    response(data.courses);
-                });
-            }
-        });
-    }
-
     function hide_filter_course_container() {
         $('#filter-course-container').hide();
         var a = $('#activate-course-search').find('a');
         a.removeClass('chzn-single-with-drop');
         a.parent().removeClass('chzn-container-active');
     }
-
+ 	
     function show_filter_course_container() {
         $('#filter-course-container').show();
         var a = $('#activate-course-search').find('a');
         a.addClass('chzn-single-with-drop');
         a.parent().addClass('chzn-container-active');
     }
-
+ 	
     function toggle_filter_course_container() {
         $('#filter-course-container').toggle();
         var a = $('#activate-course-search').find('a');
@@ -178,27 +242,7 @@
             a.parent().removeClass('chzn-container-active');
         }
     }
-
-    function connect_add_filter_options() {
-        $('.add-text-filter-button').each(function() {
-            connect_add_text_button($(this));
-        });
-        $('#filter-sharetype-container, #filter-college-container, #filter-keyword').click(function() {
-            hide_filter_course_container();
-        });
-        $('.chzn-select').chosen({disable_search_threshold: 10}).change(function() {
-            var id = $(this).attr('id');
-            var type = id.substr(id.lastIndexOf('-')+1);
-            add_filter(type, $(this).val());
-        });
-        $('#activate-course-search').click(function() {
-            toggle_filter_course_container();
-        });
-        $('#query-button-course').click(function() {
-            hide_filter_course_container();
-        });
-    }
-
+	
     function connect_add_text_button(button) {
         button.click(function(event) {
             event.preventDefault();
@@ -316,7 +360,7 @@
             remove_all_filters();
         });
     }
-    
+ 	
     function remove_all_filters() {
         $('#active-filters .filter-entry-wrapper').each(function() {
             $(this).remove();
@@ -328,47 +372,6 @@
         $('#active-filters-container').hide();
         refresh_content(0);
     }
-
-    function refresh_content(offset) {
-        $('#loading-graphic').show();
-        offset = typeof offset !== 'undefined' ? offset : 0;
-        var filters = {};
-        $("#active-filters .filter-entry").each(function() {
-            var name = $(this).attr('name');
-            var val = $(this).attr('value');
-            if (filters[name] && filters[name].indexOf(val) == -1) {
-                if (name=='course') {
-                    // some course names will return multiple ids
-                    // cater for this when building db query
-                    filters[name] += ";" +val;
-                } else {
-                    filters[name] += "," +val;
-                }
-            } else {
-                filters[name] = val;
-            }
-        });
-        var pd = {'filter': 1, 'offset': offset, 'searchtype': $('#search-type').val() };
-        $.each(filters, function(name, value) {
-            pd[name] = value;
-        });
-
-        sendjsonrequest(config['wwwroot'] + 'blocktype/groupviewsimage/browse.json.php', pd, 'POST', function(data) {
-                $('#gallery').removeClass('hidden');
-                $('#gallery').replaceWith(data.data.tablerows);
-                if (!$('#browselist_pagination').length) {
-                    var pag = $('<div>').attr('id', 'pagination').html(data.data.pagination);
-                    $('#gallery').prepend(pag);
-                } else {
-                    $('#browselist_pagination').html(data.data.pagination);
-                }
-                connect_hover_events();
-        });
-        $('#loading-graphic').hide();
-    }
-
-    $(document).ready(function() {
-        init();
-    });
+*/
 
 }( window.Browse = window.Browse || {}, jQuery ));
