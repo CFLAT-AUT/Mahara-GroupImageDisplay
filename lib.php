@@ -168,6 +168,11 @@ EOF;
 			//contains a few other things but we just wanted to focus on sharedviews
 			//the foreach below will loop through all views shared with the group
 			foreach($data[sharedviews] as $aView){
+			
+				//20140909 JW sort the array returned by View::get_sharedviews_data($limit, $offset, $group->id)
+				//by ctime, this requires the query within get_sharedviews_data to have ctime in its select string
+				$aView = self::array_msort($aView, array('ctime'=>SORT_DESC));
+			
 				//the foreach below will loop through all the properties for a view (returned by get_data method) and assigns them to the required variables
 				foreach($aView as $aViewProperty){
 					//get the view
@@ -230,6 +235,34 @@ EOF;
     }
 	/** End of code copied from blocktype::groupviews **/    
     
+	/**
+	* 20140909 JW
+	* array_msort copied from http://php.net/manual/en/function.array-multisort.php
+	* This is used to sort array returned by View::get_sharedviews_data($limit, $offset, $group->id)
+	*/
+	private static function array_msort($array, $cols){
+		$colarr = array();
+		foreach ($cols as $col => $order) {
+			$colarr[$col] = array();
+			foreach ($array as $k => $row) { $colarr[$col]['_'.$k] = strtolower($row[$col]); }
+		}
+		$eval = 'array_multisort(';
+		foreach ($cols as $col => $order) {
+			$eval .= '$colarr[\''.$col.'\'],'.$order.',';
+		}
+		$eval = substr($eval,0,-1).');';
+		eval($eval);
+		$ret = array();
+		foreach ($colarr as $col => $arr) {
+			foreach ($arr as $k => $v) {
+				$k = substr($k,1);
+				if (!isset($ret[$k])) $ret[$k] = $array[$k];
+				$ret[$k][$col] = $array[$k][$col];
+			}
+		}
+		return $ret;
+	}
+	
     /**
 	* Start of Mike Kelly's code
 	*/
