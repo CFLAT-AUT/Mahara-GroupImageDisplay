@@ -1,5 +1,3 @@
-# Mahara-GroupImageDisplay
-This is a plugin created for the ePortfolio system Mahara. It displays shared pages in an image display view on a group homepage.
 ### Overview
 
 This plugin displays shared pages in an image display view on a group homepage.
