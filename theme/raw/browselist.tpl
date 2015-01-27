@@ -4,7 +4,7 @@
 			{if $post.image.id eq "0"}
 				<a class="gall-cell celllink photo" href="{$post.page.url}" style="background-image:url('{$wwwroot}theme/raw/static/images/no_thumbnail.png');background-size: 100%"></a>
 			{else}	
-				<a class="gall-cell celllink photo" href="{$post.page.url}" style="background-image:url('{$wwwroot}artefact/file/download.php?file={$post.image.id}&view={$post.image.view}&maxwidth=150&minheight=120')"></a>
+				<a class="gall-cell celllink photo" href="{$post.page.url}" style="background-image:url('{$wwwroot}artefact/file/download.php?file={$post.image.id}&view={$post.image.view}&maxwidth=150&minheight=120'); background-color: #EEEEEE; background-repeat: repeat-x;"></a>
 			{/if}
             <span class="gall-span photo">
                 <a href="{$post.owner.profileurl}">
