@@ -4,7 +4,7 @@ This plugin displays shared pages in an image display view on a group homepage.
 
 This plugin can be added to the group homepage as a block by the group administrators. Once added, it displays all the shared pages using image icons. There is a mouse hover effect for each of the image icons. It brings up a menu, which provides links to the page itself, the full-size image that is used on the page and the author’s profile page.
 
-This plugin provides a visually attractive view, compared to the original text based page list. It is based on the functionality of the [Browse Pages plugin](https://github.com/CLTAD/mahara-browse) that is developed by Mike Kelly for the University of the Arts London's Mahara site Workflow.
+It provides a visually attractive view, compared to the original text based page list. It is based on the functionality of the [Browse Pages plugin](https://github.com/CLTAD/mahara-browse) that is developed by Mike Kelly for the University of the Arts London's Mahara site Workflow.
 
 ### Requirement
 
