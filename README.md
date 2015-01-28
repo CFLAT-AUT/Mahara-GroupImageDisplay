@@ -2,9 +2,9 @@
 
 This plugin displays shared pages in an image display view on a group homepage.
 
-This plugin can be added to the group homepage as a block by the group administrators. Once added, it displays all the shared pages using image icons. There is a mouse hover effect for each of the image icons. It brings up a menu, which provides links to the page itself, the full-size image that is used on the page and the author’s profile page.
+It can be added to the group homepage as a block by the group administrators. Once added, it displays all the shared pages using image icons. There is a mouse hover effect for each of the image icons. It brings up a menu, which provides links to the page itself, the full-size image that is used on the page and the author’s profile page.
 
-It provides a visually attractive view, compared to the original text based page list. It is based on the functionality of the [Browse Pages plugin](https://github.com/CLTAD/mahara-browse) that is developed by Mike Kelly for the University of the Arts London's Mahara site Workflow.
+This plugin provides a visually attractive view, compared to the original text based page list. It is based on the functionality of the [Browse Pages plugin](https://github.com/CLTAD/mahara-browse) that is developed by Mike Kelly for the University of the Arts London's Mahara site Workflow.
 
 ### Requirement
 
@@ -14,6 +14,12 @@ The Group Image Display plugin requires Mahara 1.6 or later.
 
 - Copy the 'groupimagedisplay' folder to your Mahara installation, inside the folder htdocs/blocktype.
 - Visit the Site Administration->Extensions->Plugin administration page and install the blocktype/groupimagedisplay plugin.
+- This plugin sorts the shared pages according to the creation date. There is a change to the core code required for this plugin to work properly.
+
+To make the change, edit the "get_sharedviews_data" methord in htdocs/lib/view.php by changing:
+            SELECT v.id,v.title,v.startdate,v.stopdate,v.description,v.group,v.owner,v.ownerformat,v.institution,v.urlid ' . $from . '
+to:
+            SELECT v.id,v.title,v.startdate,v.stopdate,v.description,v.group,v.owner,v.ownerformat,v.institution,v.urlid,v.ctime ' . $from . '
 
 ### Usage
 
