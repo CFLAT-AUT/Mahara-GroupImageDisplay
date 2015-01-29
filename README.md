@@ -12,8 +12,8 @@ The Group Image Display plugin requires Mahara 1.6 or later.
 
 ### Installation
 
-- Copy the 'groupimagedisplay' folder to your Mahara installation, inside the folder htdocs/blocktype.
-- Visit the Site Administration->Extensions->Plugin administration page and install the blocktype/groupimagedisplay plugin.
+- Put all the files under the folder 'groupviewsimage' and copy the folder to your Mahara installation, inside the folder htdocs/blocktype.
+- Visit the Site Administration->Extensions->Plugin administration page and install the blocktype/groupviewsimage plugin.
 - This plugin sorts the shared pages according to the creation date. There is a change to the core code required for this plugin to work properly.
 
 To make the change, edit the "get_sharedviews_data" method in htdocs/lib/view.php by changing the SELECT statement:
@@ -27,9 +27,7 @@ to:
 
 ### Usage
 
-Once this plugin is installed, an artefact, which is called "Group pages in image display" is avaialble when customizing your group homepage. If you drag and drop this artefact to the group homepage, it will add the image display to the homepage.
-
-This basically displays the same set of pages as the shared pages, however, in a image display mode. If there is no image on the page, it will leave it as blank on the image icon. We could do some more detailed tweak on this.
+Once this plugin is installed, a block, which is called "Group pages in image display" is avaialble under the General panel when customizing your group homepage. If you drag and drop this content block to the group homepage, it will add the image display view to it. This basically displays the same set of pages as the shared pages, however, in an image display mode.
 
 ### Fork me
 
