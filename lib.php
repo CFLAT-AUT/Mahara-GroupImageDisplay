@@ -168,7 +168,7 @@ EOF;
 			//contains a few other things but we just wanted to focus on sharedviews
 			//the foreach below will loop through all views shared with the group
 			foreach($data[sharedviews] as $aView){
-			
+
 				//20140909 JW sort the array returned by View::get_sharedviews_data($limit, $offset, $group->id)
 				//by ctime, this requires the query within get_sharedviews_data to have ctime in its select string
 				$aView = self::array_msort($aView, array('ctime'=>SORT_DESC));
@@ -196,6 +196,20 @@ EOF;
 							$artefactID = $anArtefact->id; //if it is an image artefact assign the id and break the loop
 							break;
 						}
+						
+						//20150331 JW added that if page contains a folder with images (galleries count as folders)
+						//it will pull an image from that folder and use it as the cover
+						if($anArtefact->artefacttype == 'folder'){
+							$query = "SELECT id FROM {artefact} where parent = ? AND artefacttype = 'image'";
+							$imagesInAFolder = get_records_sql_array($query,array($anArtefact->id));
+							
+							//only assign the id of an image if the folder contains at least 1 image
+							if(!empty($imagesInAFolder)){
+								$artefactID = $imagesInAFolder[0]->id;
+								break;
+							}
+						}
+						
 						//20140903 JW if there are no images on the page then set to artefactID to 0
 						//this way, when display each page, instead of a blank box it will show a place holder image
 						$artefactID = 0;
