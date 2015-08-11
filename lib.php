@@ -101,7 +101,8 @@ class PluginBlocktypeGroupViewsImage extends SystemBlocktype {
 		self::build_browse_list_html($items);
 		
 		if(empty($items) || !isset($items)){
-			return "You are not a member of this group";
+			//20150723 JW changed the return message so if there are no pages to display it says that rather you don't have access
+			return "No pages to display";
 		}
 		
 		//Not sure what this does
@@ -113,7 +114,6 @@ EOF;
 		
 		//neededJS and neededCSS are files required to render the page properly. They are done this way so it is easier to read
 		$neededJS = array(
-			get_config('wwwroot').'blocktype/groupviewsimage/js/jquery-ui/js/jquery-ui-1.8.19.custom.min.js',
 			get_config('wwwroot').'blocktype/groupviewsimage/js/chosen.jquery.js',
 			get_config('wwwroot').'blocktype/groupviewsimage/js/browse.js'
 		);
@@ -131,6 +131,9 @@ EOF;
 		$dwoo->assign('STYLESHEETLIST', $neededCSS);
 		$dwoo->assign('INLINEJAVASCRIPT', $js); //????
 		
+		//20150723 JW added extra entry to check if jquery is loaded, if not then load the below jquery
+		$dwoo->assign('JQUERYPATH', get_config('wwwroot').'blocktype/groupviewsimage/js/jquery-ui/js/jquery-ui-1.8.19.custom.min.js');
+		
 		//adds the items into the templated to be rendered
 		$dwoo->assign_by_ref('items', $items);
 
@@ -142,6 +145,7 @@ EOF;
 	public static function get_data($groupid, $offset=0, $limit=20) {
 		global $USER;
 		$texttitletrim = 20;
+		$items2 = null;
 		
         if(!defined('GROUP')) {
           define('GROUP', $groupid);
@@ -167,80 +171,84 @@ EOF;
 			//the array that is returned from View::get_sharedviews_data($limit, $offset, $group->id)
 			//contains a few other things but we just wanted to focus on sharedviews
 			//the foreach below will loop through all views shared with the group
-			foreach($data[sharedviews] as $aView){
-
-				//20140909 JW sort the array returned by View::get_sharedviews_data($limit, $offset, $group->id)
-				//by ctime, this requires the query within get_sharedviews_data to have ctime in its select string
-				$aView = self::array_msort($aView, array('ctime'=>SORT_DESC));
-			
-				//the foreach below will loop through all the properties for a view (returned by get_data method) and assigns them to the required variables
-				foreach($aView as $aViewProperty){
-					//get the view
-					$viewID = $aViewProperty[id]; //the page shared
-					$fullurl = $aViewProperty[fullurl]; //full url of the page shared
-					$viewTitle = str_shorten_text($aViewProperty[displaytitle], $texttitletrim, true); //view's title
-					
-					//get the owner of the view
-					$viewOwnerName = $aViewProperty[user]->firstname." ".$aViewProperty[user]->lastname; //owner of the view's name
-					$userobj = new User();
-					$userobj->find_by_id($aViewProperty[user]->id);
-					$profileurl = profile_url($userobj); //owner of the view's proflie page
-					$avatarurl = profile_icon_url($aViewProperty[user]->id,50,50); //owner of the view's profile picture
-					
-					
-					//get the artefact id of an image in the view
-					$theView = new View($aViewProperty[id]); //create the view
-					$artefactInView = $theView->get_artefact_metadata(); //get all artefacts in the view
-					foreach($artefactInView as $anArtefact){ //for each artefact
-						if($anArtefact->artefacttype == 'image'){
-							$artefactID = $anArtefact->id; //if it is an image artefact assign the id and break the loop
-							break;
-						}
+			foreach($data['sharedviews'] as $aView){
+				if(is_array($aView)){
+					//20140909 JW sort the array returned by View::get_sharedviews_data($limit, $offset, $group->id)
+					//by ctime, this requires the query within get_sharedviews_data to have ctime in its select string
+					$aView = self::array_msort($aView, array('ctime'=>SORT_DESC));
+				
+					//the foreach below will loop through all the properties for a view (returned by get_data method) and assigns them to the required variables
+					foreach($aView as $aViewProperty){
+						//get the view
+						$viewID = $aViewProperty['id']; //the page shared
+						$fullurl = $aViewProperty['fullurl']; //full url of the page shared
+						$viewTitle = str_shorten_text($aViewProperty['displaytitle'], $texttitletrim, true); //view's title
 						
-						//20150331 JW added that if page contains a folder with images (galleries count as folders)
-						//it will pull an image from that folder and use it as the cover
-						if($anArtefact->artefacttype == 'folder'){
-							$query = "SELECT id FROM {artefact} where parent = ? AND artefacttype = 'image'";
-							$imagesInAFolder = get_records_sql_array($query,array($anArtefact->id));
-							
-							//only assign the id of an image if the folder contains at least 1 image
-							if(!empty($imagesInAFolder)){
-								$artefactID = $imagesInAFolder[0]->id;
+						//get the owner of the view
+						$viewOwnerName = $aViewProperty['user']->firstname." ".$aViewProperty['user']->lastname; //owner of the view's name
+						$userobj = new User();
+						$userobj->find_by_id($aViewProperty['user']->id);
+						$profileurl = profile_url($userobj); //owner of the view's proflie page
+						$avatarurl = profile_icon_url($aViewProperty['user']->id,50,50); //owner of the view's profile picture
+						
+						
+						//get the artefact id of an image in the view
+						$theView = new View($aViewProperty['id']); //create the view
+						$artefactInView = $theView->get_artefact_metadata(); //get all artefacts in the view
+						foreach($artefactInView as $anArtefact){ //for each artefact
+							if($anArtefact->artefacttype == 'image'){
+								$artefactID = $anArtefact->id; //if it is an image artefact assign the id and break the loop
 								break;
 							}
+							
+							//20150331 JW added that if page contains a folder with images (galleries count as folders)
+							//it will pull an image from that folder and use it as the cover
+							if($anArtefact->artefacttype == 'folder'){
+								$query = "SELECT id FROM {artefact} where parent = ? AND artefacttype = 'image'";
+								$imagesInAFolder = get_records_sql_array($query,array($anArtefact->id));
+								
+								//only assign the id of an image if the folder contains at least 1 image
+								if(!empty($imagesInAFolder)){
+									$artefactID = $imagesInAFolder[0]->id;
+									break;
+								}
+							}
+							
+							//20140903 JW if there are no images on the page then set to artefactID to 0
+							//this way, when display each page, instead of a blank box it will show a place holder image
+							$artefactID = 0;
 						}
 						
-						//20140903 JW if there are no images on the page then set to artefactID to 0
-						//this way, when display each page, instead of a blank box it will show a place holder image
-						$artefactID = 0;
+						//the items variable below requires the contents array to be in this format
+						$contents['photos'][] = array(
+							"image" => array (
+									"id" => $artefactID,
+									"view" => $viewID
+									),
+							"type" => "photo",
+							"page" => array(
+										"url" => $fullurl,
+										"title" => $viewTitle
+							),
+							"owner" => array(
+										"name" => $viewOwnerName,
+										"profileurl" => $profileurl,
+										"avatarurl" => $avatarurl
+							)
+						);
 					}
-					
-					//the items variable below requires the contents array to be in this format
-					$contents['photos'][] = array(
-						"image" => array (
-								"id" => $artefactID,
-								"view" => $viewID
-								),
-						"type" => "photo",
-						"page" => array(
-									"url" => $fullurl,
-									"title" => $viewTitle
-						),
-						"owner" => array(
-									"name" => $viewOwnerName,
-									"profileurl" => $profileurl,
-									"avatarurl" => $avatarurl
-						)
-					);
 				}
 			}
 			
-			$items2 = array(
-					'count'	 => $data[sharedviews]->count,
-					'data'   => $contents,
-					'offset' => $offset,
-					'limit'  => $limit,
-			);
+			//20150723 JW added the if statement to check if $content is set, if not then skip
+			if(isset($contents)){
+				$items2 = array(
+						'count'	 => $data['sharedviews']->count,
+						'data'   => $contents,
+						'offset' => $offset,
+						'limit'  => $limit,
+				);
+			}
         }
 		
         //$data['group'] = $group;
