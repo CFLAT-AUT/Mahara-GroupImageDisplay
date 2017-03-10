@@ -8,22 +8,13 @@ This plugin provides a visually attractive view, compared to the original text b
 
 ### Requirement
 
-The Group Image Display plugin requires Mahara 1.6 or later.
+The Group Image Display plugin requires Mahara 16.10.2 or later.
 
 ### Installation
 
 - Put all the files under the folder 'groupviewsimage' and copy the folder to your Mahara installation, inside the document root folder htdocs/blocktype.
 - Visit the Site Administration->Extensions->Plugin administration page and install the blocktype/groupviewsimage plugin.
 - This plugin sorts the shared pages according to the creation date. There is a change to the core code required for this plugin to work properly.
-
-To make the change, edit the "get_sharedviews_data" method in document root htdocs/lib/view.php by changing the SELECT statement:
-```
-From:
-            SELECT v.id,v.title,v.startdate,v.stopdate,v.description,v.group,v.owner,v.ownerformat,v.institution,v.urlid ' . $from . '
-
-to:
-            SELECT v.id,v.title,v.startdate,v.stopdate,v.description,v.group,v.owner,v.ownerformat,v.institution,v.urlid,v.ctime ' . $from . '
-```
 
 ### Usage
 

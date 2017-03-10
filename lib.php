@@ -194,18 +194,21 @@ EOF;
 						
 						//get the artefact id of an image in the view
 						$theView = new View($aViewProperty['id']); //create the view
-						$artefactInView = $theView->get_artefact_metadata(); //get all artefacts in the view
+						$artefactInView = $theView->get_artefact_instances(); //get all artefacts in the view 20170224 JW v16.10.2 uses get_artefact_instances()
+
 						foreach($artefactInView as $anArtefact){ //for each artefact
-							if($anArtefact->artefacttype == 'image'){
-								$artefactID = $anArtefact->id; //if it is an image artefact assign the id and break the loop
+							//20170224 JW v16.10.2 uses get_artefact_instances() which means all fields need to use the get('field_name') to get value
+							if($anArtefact->get('artefacttype') == 'image'){
+								$artefactID = $anArtefact->get('id'); //if it is an image artefact assign the id and break the loop
+								echo "artefactID=".$artefactID;
 								break;
 							}
 							
 							//20150331 JW added that if page contains a folder with images (galleries count as folders)
 							//it will pull an image from that folder and use it as the cover
-							if($anArtefact->artefacttype == 'folder'){
+							if($anArtefact->get('artefacttype') == 'folder'){
 								$query = "SELECT id FROM {artefact} where parent = ? AND artefacttype = 'image'";
-								$imagesInAFolder = get_records_sql_array($query,array($anArtefact->id));
+								$imagesInAFolder = get_records_sql_array($query,array($anArtefact->get('id')));
 								
 								//only assign the id of an image if the folder contains at least 1 image
 								if(!empty($imagesInAFolder)){
