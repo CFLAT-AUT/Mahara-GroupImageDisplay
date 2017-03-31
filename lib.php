@@ -200,7 +200,6 @@ EOF;
 							//20170224 JW v16.10.2 uses get_artefact_instances() which means all fields need to use the get('field_name') to get value
 							if($anArtefact->get('artefacttype') == 'image'){
 								$artefactID = $anArtefact->get('id'); //if it is an image artefact assign the id and break the loop
-								echo "artefactID=".$artefactID;
 								break;
 							}
 							
